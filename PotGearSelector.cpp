@@ -75,64 +75,68 @@ void PotGearSelector::handleTick() {
 
     Logger::debug("PotGear Val: %d", gearSelector);
 
-    bool foundGearPos = false;
+    uint16_t diffs[4];
 
-    if ((gearSelector > ((int16_t)config->parkPosition - (int16_t)config->hysteresis)) &&
-        (gearSelector < ((int16_t)config->parkPosition + (int16_t)config->hysteresis)))
+    diffs[0] = abs(gearSelector - config->parkPosition);
+    diffs[1] = abs(gearSelector - config->neutralPosition);
+    diffs[2] = abs(gearSelector - config->drivePosition);
+    diffs[3] = abs(gearSelector - config->reversePosition);
+
+    MotorController::Gears gear = MotorController::NEUTRAL;
+    MotorController::OperationState opState = MotorController::DISABLED;
+
+    uint16_t lowest = 0xFFFF;
+
+    //to give some hysteresis we might actually change the below comparisons to be more like:
+    //if (diff[0] < (lowest - config->hysteresis)) or if (diffs[0] < (lowest - config->hysteresis/2)) or something to that effect.
+
+    if (diffs[0] < lowest) //park
     {
+        gear = MotorController::NEUTRAL;
+        opState = MotorController::DISABLED;
+        lowest = diffs[0];
         Logger::debug("Setting gear to Park(neutral)");
-        if (motorController)
-        {
-            motorController->setOpState(MotorController::DISABLED);
-            motorController->setSelectedGear(MotorController::NEUTRAL);
-        }
-        foundGearPos = true;
     }
 
-    if ((gearSelector > ((int16_t)config->neutralPosition - (int16_t)config->hysteresis)) && 
-        (gearSelector < ((int16_t)config->neutralPosition + (int16_t)config->hysteresis)))
+    if (diffs[1] < lowest) //neutral
     {
-        Logger::debug("Setting gear to neutral");
-        if (motorController)
-        {
-            motorController->setOpState(MotorController::DISABLED);
-            motorController->setSelectedGear(MotorController::NEUTRAL);
-        }
-        foundGearPos = true;
+        gear = MotorController::NEUTRAL;
+        opState = MotorController::DISABLED;
+        lowest = diffs[1];
+        Logger::debug("Setting gear to Neutral");
     }
 
-    /*if ( (gearSelector > ((int16_t)config->drivePosition - (int16_t)config->hysteresis)) &&
-         (gearSelector < ((int16_t)config->drivePosition + (int16_t)config->hysteresis))) */
-    if (gearSelector < ((int16_t)config->drivePosition + (int16_t)config->hysteresis))
+    if (diffs[2] < lowest) //drive
     {
-        Logger::debug("Setting gear to drive");
-        if (motorController)
-        {
-            motorController->setOpState(MotorController::ENABLE);
-            motorController->setSelectedGear(MotorController::DRIVE);
-        }
-        foundGearPos = true;
+        gear = MotorController::DRIVE;
+        opState = MotorController::ENABLE;
+        lowest = diffs[2];
+        Logger::debug("Setting gear to Drive");
     }
 
-    if ( (gearSelector > ((int16_t)config->reversePosition - (int16_t)config->hysteresis)) && 
-         (gearSelector < ((int16_t)config->reversePosition + (int16_t)config->hysteresis)) )
+    if (diffs[3] < lowest) //Reverse
     {
-        Logger::debug("Setting gear to reverse");
-        if (motorController)
-        {
-            motorController->setOpState(MotorController::ENABLE);
-            motorController->setSelectedGear(MotorController::REVERSE);
-        }
-        foundGearPos = true;
+        gear = MotorController::REVERSE;
+        opState = MotorController::ENABLE;
+        lowest = diffs[3];
+        Logger::debug("Setting gear to Reverse");
     }
 
-    if (!foundGearPos)
+    //if the value is too close to the outer edges then something is wrong
+    if (gearSelector < 100 || gearSelector > 4000)
     {
         Logger::debug("Gear selector ADC out of bounds! Is it misconfigured?");
-        motorController->setOpState(MotorController::DISABLED);
-        motorController->setSelectedGear(MotorController::NEUTRAL);
+        gear = MotorController::NEUTRAL;
+        opState = MotorController::DISABLED;
     }
-}
+
+    //finally, set the new mode if a motor controller is truly defined.       
+    if (motorController)
+    {
+        motorController->setOpState(opState);
+        motorController->setSelectedGear(gear);
+    }
+ }
 
 DeviceId PotGearSelector::getId() {
     return (POTGEAR);
