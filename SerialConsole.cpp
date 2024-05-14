@@ -111,6 +111,9 @@ void SerialConsole::printMenu() {
         Logger::console("   REVLIM=%i - How much torque to allow in reverse (Tenths of a percent)", config->reversePercent);
         Logger::console("   ENABLEIN=%i - Digital input to enable motor controller (0-3, 255 for none)", config->enableIn);
         Logger::console("   REVIN=%i - Digital input to reverse motor rotation (0-3, 255 for none)", config->reverseIn);
+        Logger::console("   CRUISEEN=%i - Digital input to enable cruise control (0-3, 255 for none)", config->cruiseEnPin);
+        Logger::console("   CRUISESET=%i - Digital input to set cruise control to current speed (0-3, 255 for none)", config->cruiseSetPin);
+        Logger::console("   CRUISEBRAKE=%i - Digital input to abort cruise control (0-3, 255 for none)", config->cruiseBrakePin);
         Logger::console("   TAPERHI=%i - Regen taper upper RPM (0 - 10000)", config->regenTaperUpper);
         Logger::console("   TAPERLO=%i - Regen taper lower RPM (0 - 10000)", config->regenTaperLower);
     }
@@ -472,6 +475,18 @@ void SerialConsole::handleConfigCmd() {
         motorConfig->reverseIn = newValue;
         motorController->saveConfiguration();
         Logger::console("Motor Reverse input set to DIN%i.",newValue);
+    } else if (cmdString == String("CRUISEEN") && motorConfig) {
+        motorConfig->cruiseEnPin = newValue;
+        motorController->saveConfiguration();
+        Logger::console("Cruise Enable input set to DIN%i.",newValue);
+    } else if (cmdString == String("CRUISESET") && motorConfig) {
+        motorConfig->cruiseSetPin = newValue;
+        motorController->saveConfiguration();
+        Logger::console("Cruise setpoint input set to DIN%i.",newValue);
+    } else if (cmdString == String("CRUISEBRAKE") && motorConfig) {
+        motorConfig->cruiseBrakePin = newValue;
+        motorController->saveConfiguration();
+        Logger::console("Cruise brake input set to DIN%i.",newValue);
     } else if (cmdString == String("MRELAY") && motorConfig) {
         Logger::console("Setting Main Contactor relay output to DOUT%i", newValue);
         motorConfig->mainContactorRelay = newValue;

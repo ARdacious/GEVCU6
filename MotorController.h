@@ -61,6 +61,9 @@ public:
     uint8_t enableIn;
     uint8_t reverseIn;
     uint8_t capacity;
+    uint8_t cruiseEnPin;
+    uint8_t cruiseSetPin;
+    uint8_t cruiseBrakePin;
     uint16_t regenTaperUpper; //upper limit where regen tapering starts
     uint16_t regenTaperLower; //lower RPM limit below which no regen will happen
 };
@@ -102,6 +105,7 @@ public:
     void checkEnableInput();
     void checkReverseInput();
     void checkPrecharge();
+    void checkCruisePins();
 
     void brakecheck();
     bool isReady();

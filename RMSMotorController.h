@@ -70,6 +70,7 @@ private:
 	bool isCANControlled;
 
    void sendCmdFrame();
+   void taperRegen();
    void handleCANMsgTemperature1(uint8_t *data);
    void handleCANMsgTemperature2(uint8_t *data);
    void handleCANMsgTemperature3(uint8_t *data);

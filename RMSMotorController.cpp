@@ -497,6 +497,18 @@ void RMSMotorController::handleTick()
     online = false;//This flag will be set to true by received frames
 }
 
+void RMSMotorController::taperRegen()
+{
+    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
+    int speed = abs(speedActual);
+    if (speed < config->regenTaperLower) torqueRequested = 0;
+    else {        
+        int32_t range = config->regenTaperUpper - config->regenTaperLower; //next phase is to not hard code this
+        int32_t taper = speed - config->regenTaperLower;
+        int32_t calc = (torqueRequested * taper) / range;
+        torqueRequested = (int16_t)calc;
+    }
+}
 
 void RMSMotorController::sendCmdFrame()
 {
@@ -512,12 +524,20 @@ void RMSMotorController::sendCmdFrame()
     //Byte 0-1 = Torque command
     //Byte 2-3 = Speed command (send 0, we don't do speed control)
     //Byte 4 is Direction (0 = CW, 1 = CCW)
-    //Byte 5 = Bit 0 is Enable, Bit 1 = Discharge (Discharge capacitors)
+    //Byte 5 = Bit 0 is Enable, Bit 1 = Discharge (Discharge capacitors) Bit 2 = Go into speed mode (instead of torque)
     //Byte 6-7 = Commanded Torque Limit (Send as 0 to accept EEPROM parameter unless we're setting the limit really low for some reason such as faulting or a warning)
 
     //Speed set as 0
-    output.data.bytes[2] = 0;
-    output.data.bytes[3] = 0;
+    if (getPowerMode() == MotorController::PowerMode::modeSpeed)
+    {
+        output.data.bytes[2] = getSpeedRequested() & 0xFF;
+        output.data.bytes[3] = (getSpeedRequested() >> 8) & 0xFF;
+    }
+    else
+    {
+        output.data.bytes[2] = 0;
+        output.data.bytes[3] = 0;
+    }
 
     //Torque limit set as 0
     output.data.bytes[6] = 0;
@@ -537,6 +557,8 @@ void RMSMotorController::sendCmdFrame()
         output.data.bytes[5] = 0;
     }
 
+    if (getPowerMode() == MotorController::PowerMode::modeSpeed) output.data.bytes[5] |= 4; //set speed mode bit
+
     //this is really subjective. In some installs drive and reverse are backwards of other installations
     //there should probably be a way to set this.
     if(selectedGear == DRIVE)
@@ -547,25 +569,58 @@ void RMSMotorController::sendCmdFrame()
     {
         output.data.bytes[4] = 1;
     }
-    
-    torqueRequested = (((int32_t)throttleRequested * (int32_t)config->torqueMax) / 1000); //Calculate torque request from throttle position x maximum torque
-    if(speedActual < config->speedMax)
-    {
-        torqueCommand = torqueRequested;   //If actual rpm less than max rpm, add torque command to offset
-    }
-    else
-    {
-        torqueCommand = torqueRequested / 2;   //If at RPM limit, cut torque command in half.
-    }
-    
-    //if we're asking for regen but are going slow or backward of the motoring direction then
-    //zero out the request for regen. Otherwise, allow regen
-    if ((torqueRequested < 0) && (speedActual < 25)) torqueRequested = 0;
-    
-    Logger::debug("ThrottleRequested: %d     TorqueRequested: %d", throttleRequested, torqueRequested);
 
-    output.data.bytes[1] = (torqueCommand & 0xFF00) >> 8;  //Stow torque command in bytes 0 and 1.
-    output.data.bytes[0] = (torqueCommand & 0x00FF);
+    if (getPowerMode() == MotorController::PowerMode::modeTorque)
+    {
+        torqueRequested = (((int32_t)throttleRequested * (int32_t)config->torqueMax) / 1000); //Calculate torque request from throttle position x maximum torque
+    
+        //taperRegen();
+    
+        if(speedActual > config->speedMax)
+        {
+            torqueRequested = torqueRequested / 2;   //If at RPM limit, cut torque command in half.
+        }
+
+        //if we're asking for regen but are going slow or backward of the motoring direction then
+        //zero out the request for regen. Otherwise, allow regen
+        //if ((torqueRequested < 0) && (speedActual < 200)) torqueRequested = 0;
+
+        //now, take torqueRequested and compare it to torqueCommand. If it is farther away than our slew rate
+        //then just move toward target by slew rate. Otherwise set it directly
+        int slewInc = config->torqueSlewRate / (1000000 / getTickInterval());
+        if (slewInc < 100) slewInc = 100; //just for sanity. Even a stupidly low value set to torqueSlewRate will still do... something.
+    
+        if (torqueRequested > 0)
+        {
+            if (torqueRequested > torqueCommand) torqueCommand += slewInc;
+            else 
+            {
+                torqueCommand -= (slewInc * 10);
+                if (torqueCommand < torqueRequested) torqueCommand = torqueRequested;
+            }
+        }
+        else if (torqueRequested < 0)
+        {
+            if (torqueRequested < torqueCommand) torqueCommand -= slewInc;
+            else 
+            {
+                torqueCommand += (slewInc * 10);
+                if (torqueCommand > torqueRequested) torqueCommand = torqueRequested;
+            }
+        }
+
+        if (torqueRequested == 0) torqueCommand = 0;
+ 
+        Logger::debug("ThrotReq: %d  TrqReq: %d  TrqCmd: %d", throttleRequested, torqueRequested, torqueCommand);
+
+        output.data.bytes[1] = (torqueCommand & 0xFF00) >> 8;  //Stow torque command in bytes 0 and 1.
+        output.data.bytes[0] = (torqueCommand & 0x00FF);
+    }
+    else //if in speed mode, no torque request needed.
+    {
+        output.data.bytes[1] = 0;
+        output.data.bytes[0] = 0;
+    }
 
     canHandlerEv.sendFrame(output);  //Mail it.
 

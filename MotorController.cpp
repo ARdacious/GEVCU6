@@ -145,6 +145,8 @@ void MotorController::handleTick() {
 
     if (!donePrecharge) checkPrecharge();
 
+    checkCruisePins();
+
     if(skipcounter++ > 30)    //A very low priority loop for checks that only need to be done once per second.
     {
         skipcounter=0; //Reset our laptimer
@@ -207,8 +209,8 @@ void MotorController::handleTick() {
         }
         coolingcheck();
         checkBrakeLight();
-        checkEnableInput();
-        checkReverseInput();
+        //checkEnableInput();
+        //checkReverseInput();
         checkReverseLight();
 
         //Store kilowatt hours, but only once in awhile.
@@ -218,6 +220,29 @@ void MotorController::handleTick() {
     }
 }
 
+/* For anything to happen, first the cruise enable pin must be set. By itself this does nothing. But, if the set pin is then
+pushed it will switch modes to speed control and put the setpoint where the RPM is currently at. Then switching off the enable
+pin or pushing the brake will disable cruise and re-enable torque mode.
+*/
+void MotorController::checkCruisePins()
+{
+    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
+    if (config->cruiseEnPin == 255) return; //never allow cruise without an enable pin
+    if (config->cruiseBrakePin = 255) return; //also never allow without brake abort pin
+    if (systemIO.getDigitalIn(config->cruiseEnPin))
+    {
+        if (systemIO.getDigitalIn(config->cruiseSetPin))
+        {
+            speedRequested = speedActual;
+            setPowerMode(MotorController::PowerMode::modeSpeed);   
+        }
+        if (systemIO.getDigitalIn(config->cruiseBrakePin))
+        {
+            setPowerMode(MotorController::PowerMode::modeTorque);   
+        }
+    }
+    else setPowerMode(MotorController::PowerMode::modeTorque);
+}
 
 void MotorController::checkPrecharge()
 {
@@ -587,6 +612,10 @@ void MotorController::loadConfiguration() {
         prefsHandler->read(EEMC_REVERSE_IN, &config->reverseIn);
         prefsHandler->read(EEMC_TAPER_UPPER, &config->regenTaperUpper);
         prefsHandler->read(EEMC_TAPER_LOWER, &config->regenTaperLower);
+        prefsHandler->read(EEMC_CRUISE_EN, &config->cruiseEnPin);
+        prefsHandler->read(EEMC_CRUISE_SET, &config->cruiseSetPin);
+        prefsHandler->read(EEMC_CRUISE_BRAKE, &config->cruiseBrakePin);
+
         //prefsHandler->read(EESYS_CAPACITY, &config->capacity);
         config->capacity = 0;
         if (config->regenTaperLower < 0 || config->regenTaperLower > 10000 ||
@@ -616,6 +645,9 @@ void MotorController::loadConfiguration() {
         config->reverseIn = ReverseIn;
         config->regenTaperLower = RegenTaperLower;
         config->regenTaperUpper = RegenTaperUpper;
+        config->cruiseEnPin = 255;
+        config->cruiseSetPin = 255;
+        config->cruiseBrakePin = 255;
         saveConfiguration();
     }
     //DeviceManager::getInstance()->sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);
@@ -647,6 +679,9 @@ void MotorController::saveConfiguration() {
     prefsHandler->write(EEMC_REVERSE_IN, config->reverseIn);
     prefsHandler->write(EEMC_TAPER_LOWER, config->regenTaperLower);
     prefsHandler->write(EEMC_TAPER_UPPER, config->regenTaperUpper);
+    prefsHandler->write(EEMC_CRUISE_EN, config->cruiseEnPin);
+    prefsHandler->write(EEMC_CRUISE_SET, config->cruiseSetPin);
+    prefsHandler->write(EEMC_CRUISE_BRAKE, config->cruiseBrakePin);
     //prefsHandler->write(EESYS_CAPACITY, config->capacity);
 
     Logger::debug("Saved config in MotorController");
