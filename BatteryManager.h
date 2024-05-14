@@ -68,6 +68,7 @@ public:
     virtual bool hasTemperatures() = 0;
     virtual bool isChargeOK() = 0;
     virtual bool isDischargeOK() = 0;
+    virtual bool isDrivingOK();
 protected:
     int packVoltage; //tenths of a volt
     signed int packCurrent; //tenths of an amp
@@ -79,6 +80,7 @@ protected:
     int dischargeLimit, chargeLimit;
     bool allowCharge, allowDischarge;
     bool isFaulted;
+    bool bDrivingOK;
 
 private:
 };

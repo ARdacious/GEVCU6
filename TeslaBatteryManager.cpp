@@ -50,6 +50,7 @@ void TeslaBatteryManager::setup() {
     //Relevant BMS messages we care about are 0x650 and 0x651. There is 0x68F with
     //voltages for every cell but we probably don't need that. 
     canHandlerEv.attach(this, 0x650, 0x7f0, false);
+    canHandlerEv.attach(this, 0x622, 0x7FF, false);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_THINK);
 }
@@ -150,6 +151,20 @@ void TeslaBatteryManager::handleCanFrame(CAN_FRAME *frame) {
             allowDischarge = true;
             allowCharge = true;
         }
+        break;
+    /*
+    Byte 0 is 4 status flags
+    bits 0-1 = LED1 status (0 = off, 1 = on, 2=flashing)
+    bits 2-3 = LED2 status
+    bits 4-5 = wake output status
+    bits 6-7 = control pilot status (might be useful for drive inhibit if a digital input isn't being used for that)
+    Byte 1 = control pilot duty cycle (0.5% increment)
+    Bytes 2-3 = elapsed time (seconds) Big endian
+    Bytes 4-5 = LV Battery voltage (mv)
+    */
+    case 0x622:
+        if ((frame->data.bytes[0] >> 6) > 0) bDrivingOK = false;
+        else bDrivingOK = true;
         break;
     }
 }

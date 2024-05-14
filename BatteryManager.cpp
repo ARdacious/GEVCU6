@@ -34,6 +34,7 @@ BatteryManager::BatteryManager() : Device()
     packCurrent = 0;
     SOC = 0;
     isFaulted = false;
+    bDrivingOK = true;
 }
 
 BatteryManager::~BatteryManager()
@@ -44,7 +45,8 @@ DeviceType BatteryManager::getType() {
     return (DEVICE_BMS);
 }
 
-void BatteryManager::handleTick() {
+void BatteryManager::handleTick() 
+{
     
 }
 
@@ -86,6 +88,11 @@ int BatteryManager::getHighTemperature()
 bool BatteryManager::getFaulted()
 {
     return isFaulted;
+}
+
+bool BatteryManager::isDrivingOK()
+{
+    return bDrivingOK;
 }
 
 void BatteryManager::loadConfiguration() {
