@@ -44,8 +44,10 @@ PWM_TABLE pwmTable[7] =
     {340, 550, 36}, //24% output
     {370, 700, 50}, //33% output
     {390, 850, 72}, //48% output
-    {430, 1200, 84}, //56% output
-    {470, 2300, 100}  //66% output
+    {390, 1200, 72},
+    {390, 2300, 72},
+    //{430, 1200, 84}, //56% output
+    //{470, 2300, 100}  //66% output
 };
 
 /*
@@ -120,7 +122,7 @@ void PWMHeater::handleTick()
             //if (config->pumpOutputPin < 255) systemIO.setDigitalOutput(config->pumpOutputPin, true);
             if (config->pwmPin < 255)
             {
-                duty = 440; //about 61%. Pretty powerfully on.
+                duty = 390;
                 systemIO.setDigitalSlowPWM(config->pwmPin, 50, duty);
             }
             active = true;
