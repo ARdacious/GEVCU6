@@ -209,8 +209,8 @@ void MotorController::handleTick() {
         }
         coolingcheck();
         checkBrakeLight();
-        //checkEnableInput();
-        //checkReverseInput();
+        checkEnableInput();
+        checkReverseInput();
         checkReverseLight();
 
         //Store kilowatt hours, but only once in awhile.
