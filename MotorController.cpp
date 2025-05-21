@@ -304,6 +304,9 @@ void MotorController::coolingcheck()
             if(!coolflag)
             {
                 coolflag=1;
+                // TODO: add controlling two pins: turn on
+                // one for the cooling fan, change to PWM output (see PWMHeater)
+                // one for the water pump, also use PWM output to control pumping speed
                 systemIO.setDigitalOutput(coolfan, 1); //Turn on cooling fan output
                 statusBitfield1 |=1 << coolfan; //set bit to turn on cooling fan output annunciator
                 statusBitfield3 |=1 << 9; //Set bit to turn on OVERTEMP annunciator
@@ -315,6 +318,8 @@ void MotorController::coolingcheck()
             if(coolflag)
             {
                 coolflag=0;
+                // here we need to turn the stuff off
+                // things to consider, do we always want to pump water a little bit?
                 systemIO.setDigitalOutput(coolfan, 0); //Set cooling fan output off
                 statusBitfield1 &= ~(1 << coolfan); //clear bit to turn off cooling fan output annunciator
                 statusBitfield3 &= ~(1 << 9); //clear bit to turn off OVERTEMP annunciator
