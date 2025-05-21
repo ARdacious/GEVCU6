@@ -307,6 +307,7 @@ void MotorController::coolingcheck()
                 // TODO: add controlling two pins: turn on
                 // one for the cooling fan, change to PWM output (see PWMHeater)
                 // one for the water pump, also use PWM output to control pumping speed
+                // hallo
                 systemIO.setDigitalOutput(coolfan, 1); //Turn on cooling fan output
                 statusBitfield1 |=1 << coolfan; //set bit to turn on cooling fan output annunciator
                 statusBitfield3 |=1 << 9; //Set bit to turn on OVERTEMP annunciator
