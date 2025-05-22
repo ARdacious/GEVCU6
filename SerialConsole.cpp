@@ -191,6 +191,11 @@ void SerialConsole::printMenu() {
         Logger::console("   COOLFAN=%i - Digital output to turn on cooling fan(0-7, 255 for none)", config->coolFan);
         Logger::console("   COOLON=%i - Inverter temperature C to turn cooling on", config->coolOn);
         Logger::console("   COOLOFF=%i - Inverter temperature C to turn cooling off", config->coolOff);
+
+        Logger::console("   COOLPUMP=%i - Digital output to turn on cooling pump(0-7, 255 for none)", config->coolPump);
+        Logger::console("   COOLPUMP_MIN=%i - Minimum PWM duty cycle (0-100)", config->coolPumpMinPercentage);
+        Logger::console("   COOLPUMP_MAX=%i - Maximum PWM duty cycle (0-100)", config->coolPumpMaxPercentage);
+
         Logger::console("   BRAKELT = %i - Digital output to turn on brakelight (0-7, 255 for none)", config->brakeLight);
         Logger::console("   REVLT=%i - Digital output to turn on reverse light (0-7, 255 for none)", config->revLight);  
         Logger::console("   NOMV=%i - Fully charged pack voltage that automatically resets kWh counter", config->nominalVolt/10);        
@@ -808,6 +813,24 @@ void SerialConsole::handleConfigCmd() {
             motorController->saveConfiguration();
         }
         else Logger::console("Invalid cooling OFF temperature. Please enter a value 0 - 200F");
+    } else if (cmdString == String("COOLPUMP") && motorConfig) {
+        Logger::console("Cooling pump output updated to: %i", newValue);
+        motorConfig->coolPump = newValue;
+        motorController->saveConfiguration();
+    } else if (cmdString == String("COOLPUMP_MIN")&& motorConfig) {
+        if (newValue <= 100 && newValue >= 0) {
+            Logger::console("Cooling pump min duty: %i %%", newValue);
+            motorConfig->coolPumpMinPercentage = newValue;
+            motorController->saveConfiguration();
+        }
+        else Logger::console("Invalid cooling pump duty. Please enter a value 0 - 100%%");
+    } else if (cmdString == String("COOLPUMP_MAX")&& motorConfig) {
+        if (newValue <= 100 && newValue >= 0) {
+            Logger::console("Cooling pump max duty: %i %%", newValue);
+            motorConfig->coolPumpMaxPercentage = newValue;
+            motorController->saveConfiguration();
+        }
+        else Logger::console("Invalid cooling pump duty. Please enter a value 0 - 100%%");
     } else if (cmdString == String("OUTPUT") && newValue<8) {
         int outie = systemIO.getDigitalOutput(newValue);
         Logger::console("DOUT%d,  STATE: %d",newValue, outie);

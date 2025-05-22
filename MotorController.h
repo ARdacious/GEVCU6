@@ -66,6 +66,9 @@ public:
     uint8_t cruiseBrakePin;
     uint16_t regenTaperUpper; //upper limit where regen tapering starts
     uint16_t regenTaperLower; //lower RPM limit below which no regen will happen
+    uint8_t coolPump;
+    uint8_t coolPumpMinPercentage;
+    uint8_t coolPumpMaxPercentage;
 };
 
 class MotorController: public Device {

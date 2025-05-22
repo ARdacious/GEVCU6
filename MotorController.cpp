@@ -103,7 +103,7 @@ void MotorController::setup() {
     // initialize coolfan pwm at 0%
     int coolfan = getCoolFan();
     if (coolfan >= 0 && coolfan < 8) {
-        systemIO.setDigitalSlowPWMDuty(coolfan, 50, 0);
+        systemIO.setDigitalSlowPWM(coolfan, 50, 0);
     }
 
     Device::setup();
@@ -628,6 +628,10 @@ void MotorController::loadConfiguration() {
         prefsHandler->read(EEMC_CRUISE_EN, &config->cruiseEnPin);
         prefsHandler->read(EEMC_CRUISE_SET, &config->cruiseSetPin);
         prefsHandler->read(EEMC_CRUISE_BRAKE, &config->cruiseBrakePin);
+        // add reading cool pump preference from EEPROM
+        prefsHandler->read(EEMC_COOL_PUMP, &config->coolPump);
+        prefsHandler->read(EEMC_COOL_PUMP_MIN, &config->coolPumpMinPercentage);
+        prefsHandler->read(EEMC_COOL_PUMP_MAX, &config->coolPumpMaxPercentage);
 
         //prefsHandler->read(EESYS_CAPACITY, &config->capacity);
         config->capacity = 0;
@@ -661,6 +665,9 @@ void MotorController::loadConfiguration() {
         config->cruiseEnPin = 255;
         config->cruiseSetPin = 255;
         config->cruiseBrakePin = 255;
+        config->coolPump = 255;
+        config->coolPumpMinPercentage = 0;
+        config->coolPumpMaxPercentage = 0;
         saveConfiguration();
     }
     //DeviceManager::getInstance()->sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);
@@ -696,7 +703,10 @@ void MotorController::saveConfiguration() {
     prefsHandler->write(EEMC_CRUISE_SET, config->cruiseSetPin);
     prefsHandler->write(EEMC_CRUISE_BRAKE, config->cruiseBrakePin);
     //prefsHandler->write(EESYS_CAPACITY, config->capacity);
-
+    // add storing cool pump preference from EEPROM
+    prefsHandler->write(EEMC_COOL_PUMP, config->coolPump);
+    prefsHandler->write(EEMC_COOL_PUMP_MIN, config->coolPumpMinPercentage);
+    prefsHandler->write(EEMC_COOL_PUMP_MAX, config->coolPumpMaxPercentage);
     Logger::debug("Saved config in MotorController");
 
     prefsHandler->saveChecksum();

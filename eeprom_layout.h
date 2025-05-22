@@ -91,6 +91,9 @@ the end of the stardard data. The below numbers are offsets from the device's ee
 #define EEMC_CRUISE_EN           54 //1 byte
 #define EEMC_CRUISE_SET          55 //1 byte
 #define EEMC_CRUISE_BRAKE        56 //1 byte
+#define EEMC_COOL_PUMP           57 //1 byte pin number
+#define EEMC_COOL_PUMP_MIN       58 //1 byte min pump percentage
+#define EEMC_COOL_PUMP_MAX       59 //1 byte max pump percentage
 
 //throttle data
 #define EETH_MIN_ONE             20 //2 bytes - ADC value of minimum value for first channel
