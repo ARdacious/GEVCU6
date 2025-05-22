@@ -99,7 +99,12 @@ void MotorController::setup() {
                     systemIO.getDigitalOutput(0), systemIO.getDigitalOutput(1), systemIO.getDigitalOutput(2), systemIO.getDigitalOutput(3),
                     systemIO.getDigitalOutput(4), systemIO.getDigitalOutput(5), systemIO.getDigitalOutput(6), systemIO.getDigitalOutput(7));
     coolflag = false;
-      
+
+    // initialize coolfan pwm at 0%
+    int coolfan = getCoolFan();
+    if (coolfan >= 0 && coolfan < 8) {
+        systemIO.setDigitalSlowPWMDuty(coolfan, 50, 0);
+    }
 
     Device::setup();
 
@@ -307,7 +312,9 @@ void MotorController::coolingcheck()
                 // TODO: add controlling two pins: turn on
                 // one for the cooling fan, change to PWM output (see PWMHeater)
                 // one for the water pump, also use PWM output to control pumping speed
-                systemIO.setDigitalOutput(coolfan, 1); //Turn on cooling fan output
+                // systemIO.setDigitalOutput(coolfan, 1); //Turn on cooling fan output
+                // example: if temp too high, set to 75%
+                systemIO.updateDigitalSlowPWMDuty(coolfan, 750);
                 statusBitfield1 |=1 << coolfan; //set bit to turn on cooling fan output annunciator
                 statusBitfield3 |=1 << 9; //Set bit to turn on OVERTEMP annunciator
             }
@@ -320,7 +327,8 @@ void MotorController::coolingcheck()
                 coolflag=0;
                 // here we need to turn the stuff off
                 // things to consider, do we always want to pump water a little bit?
-                systemIO.setDigitalOutput(coolfan, 0); //Set cooling fan output off
+                //systemIO.setDigitalOutput(coolfan, 0); //Set cooling fan output off
+                systemIO.updateDigitalSlowPWMDuty(coolfan, 250);
                 statusBitfield1 &= ~(1 << coolfan); //clear bit to turn off cooling fan output annunciator
                 statusBitfield3 &= ~(1 << 9); //clear bit to turn off OVERTEMP annunciator
             }
