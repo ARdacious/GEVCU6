@@ -35,8 +35,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <due_can.h>
 
-#define CFG_BUILD_NUM	1061      //increment this every time a git commit is done. 
-#define CFG_VERSION "GEVCU 2021-03-12"
+#define CFG_BUILD_NUM	1062      //increment this every time a git commit is done. 
+#define CFG_VERSION "GEVCU 2026-01-16"
 
 /*
  * SERIAL CONFIGURATION
