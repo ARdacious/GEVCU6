@@ -25,6 +25,8 @@ You will need the following to have any hope of compiling and running the firmwa
 - Wire_EEPROM
 - firmware_receiver
 - pwm_lib
+- ArduPID
+- FireTimer
 
 All libraries belong in %USERPROFILE%\Documents\Arduino\libraries (Windows) or ~/Arduino/libraries (Linux/Mac).
 You will need to remove -master or any other postfixes. Your library folders should be named as above.
