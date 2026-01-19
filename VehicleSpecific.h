@@ -51,6 +51,12 @@ public:
 
 protected:
 
+    bool lastIgnitionState = false;
+    bool preChargeEnabled = false;
+    bool mainContactorsEnabled = false;
+    unsigned long preChargeEnabledAt = 0;
+    unsigned long lastIgnitionStateChange = 0;
+
 private:
     bool didInitialSetup;
     int waitTicksStartup;

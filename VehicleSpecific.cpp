@@ -66,6 +66,10 @@ void VehicleSpecific::setup() {
     tickHandler.attach(this, CFG_TICK_INTERVAL_VEHICLE);
 }
 
+#define PRECHARGE      0
+#define MAINCONTACTOR  1
+#define PUMPPWM        6
+#define IGNITION_PIN   2
 /*
  * Process a timer event. This is where you should be doing checks and updates. By default this
  * function is called 10 times per second.
@@ -85,48 +89,39 @@ void VehicleSpecific::handleTick() {
     if (!didInitialSetup)
     {
         didInitialSetup = true;
-        systemIO.setAnalogOut(1, 1); //set second button's LED to RED
-        systemIO.setAnalogOut(0, 1000); //send batch
-        if (motor) motor->setSelectedGear(MotorController::NEUTRAL);
+        systemIO.setDigitalOutput(PRECHARGE, false);
+        systemIO.setDigitalOutput(MAINCONTACTOR, false);
+        systemIO.setAnalogOut(PUMPPWM, 200);
     }
-    
-    //button 0 on the pad is reverse
-    //button 1 is neutral
-    //button 2 is drive
-    //button 3 is status
-    //button 4 is cruise set / minus
-    //button 5 is cruise resume / plus
-    //button 6 is turtle mode
-    //button 7 is rabbit mode
-    //There are four digital inputs before us (0-3) so buttons start at digital input 4
-    if (systemIO.getDigitalIn(5)) //set drive mode neutral
-    {
-        Logger::debug("VS Setting gear to neutral");
-        systemIO.setAnalogOut(0, 0);
-        systemIO.setAnalogOut(1, 1);
-        systemIO.setAnalogOut(2, 0);
-        systemIO.setAnalogOut(0, 1000);
-        if (motor) motor->setSelectedGear(MotorController::NEUTRAL);
+
+    bool pinState = systemIO.getDigitalIn(IGNITION_PIN);
+    if (pinState != lastIgnitionState) {
+        // update timestamp
+        lastIgnitionStateChange = millis();
+        lastIgnitionState = pinState;
     }
-    if (systemIO.getDigitalIn(6)) //set drive mode to drive
-    {
-        Logger::debug("VS Setting gear to drive");
-        systemIO.setAnalogOut(0, 0);
-        systemIO.setAnalogOut(1, 0);
-        systemIO.setAnalogOut(2, 1);        
-        systemIO.setAnalogOut(0, 1000);
-        if (motor) motor->setSelectedGear(MotorController::DRIVE);
+    if (millis() - lastIgnitionState > 3000) {
+        if (pinState) {
+            if (!preChargeEnabled) {
+                // Turn on Precharge
+                preChargeEnabled = true;
+                preChargeEnabledAt = millis();
+            }
+            else {
+                // Turn off HV & Precharge
+                preChargeEnabled = false;
+                mainContactorsEnabled = false;
+            }
+        }
     }
-    if (systemIO.getDigitalIn(4)) //set drive mode to reverse
-    {
-        Logger::debug("VS Setting gear to reverse");
-        systemIO.setAnalogOut(0, 1);
-        systemIO.setAnalogOut(1, 0);
-        systemIO.setAnalogOut(2, 0);        
-        systemIO.setAnalogOut(0, 1000);
-        if (motor) motor->setSelectedGear(MotorController::REVERSE);
+    if (preChargeEnabled) {
+        if (millis() - preChargeEnabledAt > 10000) {
+            // Turn on HV
+            mainContactorsEnabled = true;
+        }
     }
-    
+    systemIO.setDigitalOutput(PRECHARGE, preChargeEnabled);
+    systemIO.setDigitalOutput(MAINCONTACTOR, mainContactorsEnabled);
 }
 
 /*
