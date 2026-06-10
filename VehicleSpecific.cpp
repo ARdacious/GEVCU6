@@ -47,7 +47,7 @@ VehicleSpecific::VehicleSpecific() : Device() {
     
     commonName = "VehicleSpecific";
     didInitialSetup = false;
-    waitTicksStartup = (5000000ul / CFG_TICK_INTERVAL_VEHICLE);
+    waitTicksStartup = 20;
 }
 
 /*
@@ -66,10 +66,8 @@ void VehicleSpecific::setup() {
     tickHandler.attach(this, CFG_TICK_INTERVAL_VEHICLE);
 }
 
-#define PRECHARGE      0
-#define MAINCONTACTOR  1
-#define PUMPPWM        6
-#define IGNITION_PIN   2
+#define PUMPPWM_PIN        7
+
 /*
  * Process a timer event. This is where you should be doing checks and updates. By default this
  * function is called 10 times per second.
@@ -89,39 +87,17 @@ void VehicleSpecific::handleTick() {
     if (!didInitialSetup)
     {
         didInitialSetup = true;
-        systemIO.setDigitalOutput(PRECHARGE, false);
-        systemIO.setDigitalOutput(MAINCONTACTOR, false);
-        systemIO.setAnalogOut(PUMPPWM, 200);
+        systemIO.setAnalogOut(PUMPPWM_PIN, 200);
     }
-
-    bool pinState = systemIO.getDigitalIn(IGNITION_PIN);
-    if (pinState != lastIgnitionState) {
-        // update timestamp
-        lastIgnitionStateChange = millis();
-        lastIgnitionState = pinState;
+    int16_t tempMotor = motor->getTemperatureMotor();
+    int16_t tempInverter = motor->getTemperatureInverter();
+    int16_t tempSystem = motor->getTemperatureSystem();
+    Logger::debug("Motor Temp: %d, Inverter Temp: %d, System Temp: %d", tempMotor, tempInverter, tempSystem);
+    if (tempInverter > 100) {
+        systemIO.setAnalogOut(PUMPPWM_PIN, 255);
+    } else {
+        systemIO.setAnalogOut(PUMPPWM_PIN, 200);
     }
-    if (millis() - lastIgnitionState > 3000) {
-        if (pinState) {
-            if (!preChargeEnabled) {
-                // Turn on Precharge
-                preChargeEnabled = true;
-                preChargeEnabledAt = millis();
-            }
-            else {
-                // Turn off HV & Precharge
-                preChargeEnabled = false;
-                mainContactorsEnabled = false;
-            }
-        }
-    }
-    if (preChargeEnabled) {
-        if (millis() - preChargeEnabledAt > 10000) {
-            // Turn on HV
-            mainContactorsEnabled = true;
-        }
-    }
-    systemIO.setDigitalOutput(PRECHARGE, preChargeEnabled);
-    systemIO.setDigitalOutput(MAINCONTACTOR, mainContactorsEnabled);
 }
 
 /*
