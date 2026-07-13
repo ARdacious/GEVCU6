@@ -51,11 +51,9 @@ public:
 
 protected:
 
-    bool lastIgnitionState = false;
-    bool preChargeEnabled = false;
-    bool mainContactorsEnabled = false;
-    unsigned long preChargeEnabledAt = 0;
-    unsigned long lastIgnitionStateChange = 0;
+    bool lastIgnitionBttnState = false;
+    bool ignitionState = false;
+    unsigned long lastIgnitionBttnStateChange = 0;
 
 private:
     bool didInitialSetup;

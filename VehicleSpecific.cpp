@@ -39,6 +39,10 @@
 
 #include "VehicleSpecific.h"
 
+#define PUMPPWM_PIN         7
+#define IGNITION_IN_PIN     2
+#define IGNITION_OUT_PIN    0
+
 /*
  * Constructor
  */
@@ -66,8 +70,6 @@ void VehicleSpecific::setup() {
     tickHandler.attach(this, CFG_TICK_INTERVAL_VEHICLE);
 }
 
-#define PUMPPWM_PIN        7
-
 /*
  * Process a timer event. This is where you should be doing checks and updates. By default this
  * function is called 10 times per second.
@@ -81,14 +83,44 @@ void VehicleSpecific::handleTick() {
     if (waitTicksStartup > 0) 
     {
         waitTicksStartup--;
+        if (waitTicksStartup == 0) {
+            Logger::info("Vehicle specific: Done waiting");
+        }
         return;
     }
     
     if (!didInitialSetup)
     {
         didInitialSetup = true;
+        Logger::info("Vehicle specific: Initial setup");
+        // disable ignition
+        systemIO.setDigitalOutput(IGNITION_OUT_PIN, false);
+        // default pump speed
         systemIO.setAnalogOut(PUMPPWM_PIN, 200);
     }
+    // check ignition
+    bool ignitionBttnState = systemIO.getDigitalIn(IGNITION_IN_PIN);
+    if (ignitionBttnState != lastIgnitionBttnState) {
+        lastIgnitionBttnStateChange = millis();
+        Logger::info("Vehicle specific: Ignition bttn changed to %d", ignitionBttnState);
+    }
+    unsigned long duration = millis() - lastIgnitionBttnStateChange;
+    if (ignitionState == false) {
+        // check if button held for 3 seconds
+        if (ignitionBttnState == true && lastIgnitionBttnStateChange > 3000) {
+            ignitionState = true;
+            Logger::info("Vehicle specific: Ignition on");
+        }
+    }
+    else {
+        // check if button held for 3 seconds
+        if (ignitionBttnState == true && lastIgnitionBttnStateChange > 3000) {
+            ignitionState = false;
+            Logger::info("Vehicle specific: Ignition off");
+        }   
+    }
+    systemIO.setDigitalOutput(IGNITION_OUT_PIN, ignitionState);
+    // Handle temperature monitoring for the coolant pump
     int16_t tempMotor = motor->getTemperatureMotor();
     int16_t tempInverter = motor->getTemperatureInverter();
     int16_t tempSystem = motor->getTemperatureSystem();
