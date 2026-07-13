@@ -54,6 +54,7 @@ protected:
     bool lastIgnitionBttnState = false;
     bool ignitionState = false;
     unsigned long lastIgnitionBttnStateChange = 0;
+    unsigned long timeCounter = 0;
 
 private:
     bool didInitialSetup;

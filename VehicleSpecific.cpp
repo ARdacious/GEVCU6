@@ -79,7 +79,7 @@ void VehicleSpecific::handleTick() {
     Logger::debug("VS Tick Handler");
 
     MotorController * motor = deviceManager.getMotorController();
-
+    timeCounter += 1;
     if (waitTicksStartup > 0) 
     {
         waitTicksStartup--;
@@ -101,24 +101,28 @@ void VehicleSpecific::handleTick() {
     // check ignition
     bool ignitionBttnState = systemIO.getDigitalIn(IGNITION_IN_PIN);
     if (ignitionBttnState != lastIgnitionBttnState) {
-        lastIgnitionBttnStateChange = millis();
+        lastIgnitionBttnStateChange = timeCounter;
         Logger::info("Vehicle specific: Ignition bttn changed to %d", ignitionBttnState);
     }
-    unsigned long duration = millis() - lastIgnitionBttnStateChange;
+    unsigned long duration = timeCounter - lastIgnitionBttnStateChange;
     if (ignitionState == false) {
         // check if button held for 3 seconds
-        if (ignitionBttnState == true && lastIgnitionBttnStateChange > 3000) {
+        if (ignitionBttnState == true && duration > 10) {
             ignitionState = true;
             Logger::info("Vehicle specific: Ignition on");
+            lastIgnitionBttnStateChange = timeCounter;
         }
     }
     else {
         // check if button held for 3 seconds
-        if (ignitionBttnState == true && lastIgnitionBttnStateChange > 3000) {
+        if (ignitionBttnState == true && duration > 30) {
             ignitionState = false;
             Logger::info("Vehicle specific: Ignition off");
+            lastIgnitionBttnStateChange = timeCounter;
         }   
     }
+    lastIgnitionBttnState = ignitionBttnState;
+    // set ignition output
     systemIO.setDigitalOutput(IGNITION_OUT_PIN, ignitionState);
     // Handle temperature monitoring for the coolant pump
     int16_t tempMotor = motor->getTemperatureMotor();
